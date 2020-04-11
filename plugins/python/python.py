@@ -24,11 +24,10 @@ PLUGIN_NAME = ffi.new('char[]', b'Python')
 PLUGIN_DESC = ffi.new('char[]', b'Python %d.%d scripting interface' % (sys.version_info[0], sys.version_info[1]))
 PLUGIN_VERSION = ffi.new('char[]', VERSION)
 
-# TODO: Constants should be screaming snake case
-hexchat = None
-local_interp = None
-hexchat_stdout = None
-plugins = set()
+HEXCHAT = None
+LOCAL_INTERP = None
+HEXCHAT_STDOUT = None
+PLUGINS = set()
 
 
 @contextmanager
@@ -36,8 +35,8 @@ def redirected_stdout():
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__
     yield
-    sys.stdout = hexchat_stdout
-    sys.stderr = hexchat_stdout
+    sys.stdout = HEXCHAT_STDOUT
+    sys.stderr = HEXCHAT_STDOUT
 
 
 if os.getenv('HEXCHAT_LOG_PYTHON'):
@@ -146,7 +145,7 @@ class Plugin:
     def loadfile(self, filename):
         try:
             self.filename = filename
-            with open(filename) as f:
+            with open(filename, encoding='utf8') as f:
                 data = f.read()
             compiled = compile_file(data, filename)
             exec(compiled, self.globals)
@@ -315,10 +314,10 @@ def load_filename(filename):
 
         filename = os.path.join(configdir, 'addons', filename)
 
-    if filename and not any(plugin.filename == filename for plugin in plugins):
+    if filename and not any(plugin.filename == filename for plugin in PLUGINS):
         plugin = Plugin()
         if plugin.loadfile(filename):
-            plugins.add(plugin)
+            PLUGINS.add(plugin)
             return True
 
     return False
@@ -326,9 +325,9 @@ def load_filename(filename):
 
 def unload_name(name):
     if name:
-        for plugin in plugins:
+        for plugin in PLUGINS:
             if name in (plugin.name, plugin.filename, os.path.basename(plugin.filename)):
-                plugins.remove(plugin)
+                PLUGINS.remove(plugin)
                 return True
 
     return False
@@ -336,10 +335,10 @@ def unload_name(name):
 
 def reload_name(name):
     if name:
-        for plugin in plugins:
+        for plugin in PLUGINS:
             if name in (plugin.name, plugin.filename, os.path.basename(plugin.filename)):
                 filename = plugin.filename
-                plugins.remove(plugin)
+                PLUGINS.remove(plugin)
                 return load_filename(filename)
 
     return False
@@ -369,7 +368,7 @@ def autoload():
 
 
 def list_plugins():
-    if not plugins:
+    if not PLUGINS:
         lib.hexchat_print(lib.ph, b'No python modules loaded')
         return
 
@@ -379,7 +378,7 @@ def list_plugins():
         [(b'-' * len(s)) for s in tbl_headers]
     ]
 
-    for plugin in plugins:
+    for plugin in PLUGINS:
         basename = os.path.basename(plugin.filename).encode()
         name = plugin.name.encode()
         version = plugin.version.encode() if plugin.version else b'<none>'
@@ -398,24 +397,24 @@ def list_plugins():
 
 
 def exec_in_interp(python):
-    global local_interp
+    global LOCAL_INTERP
 
     if not python:
         return
 
-    if local_interp is None:
-        local_interp = Plugin()
-        local_interp.locals = {}
-        local_interp.globals['hexchat'] = hexchat
+    if LOCAL_INTERP is None:
+        LOCAL_INTERP = Plugin()
+        LOCAL_INTERP.locals = {}
+        LOCAL_INTERP.globals['hexchat'] = HEXCHAT
 
     code = compile_line(python)
     try:
-        ret = eval(code, local_interp.globals, local_interp.locals)
+        ret = eval(code, LOCAL_INTERP.globals, LOCAL_INTERP.locals)
         if ret is not None:
             lib.hexchat_print(lib.ph, '{}'.format(ret).encode())
 
     except Exception as e:
-        traceback.print_exc(file=hexchat_stdout)
+        traceback.print_exc(file=HEXCHAT_STDOUT)
 
 
 @ffi.def_extern()
@@ -487,8 +486,8 @@ def _on_py_command(word, word_eol, userdata):
 
 @ffi.def_extern()
 def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
-    global hexchat
-    global hexchat_stdout
+    global HEXCHAT
+    global HEXCHAT_STDOUT
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -500,16 +499,16 @@ def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
         libdir = __decode(ffi.string(libdir))
         modpath = os.path.join(libdir, '..', 'python')
         sys.path.append(os.path.abspath(modpath))
-        hexchat = importlib.import_module('hexchat')
+        HEXCHAT = importlib.import_module('hexchat')
 
     except (UnicodeDecodeError, ImportError) as e:
         lib.hexchat_print(lib.ph, b'Failed to import module: ' + repr(e).encode())
 
         return 0
 
-    hexchat_stdout = Stdout()
-    sys.stdout = hexchat_stdout
-    sys.stderr = hexchat_stdout
+    HEXCHAT_STDOUT = Stdout()
+    sys.stdout = HEXCHAT_STDOUT
+    sys.stderr = HEXCHAT_STDOUT
     pydoc.help = pydoc.Helper(HelpEater(), HelpEater())
 
     lib.hexchat_hook_command(lib.ph, b'', 0, lib._on_say_command, ffi.NULL, ffi.NULL)
@@ -531,15 +530,15 @@ def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
 
 @ffi.def_extern()
 def _on_plugin_deinit():
-    global local_interp
-    global hexchat
-    global hexchat_stdout
-    global plugins
+    global LOCAL_INTERP
+    global HEXCHAT
+    global HEXCHAT_STDOUT
+    global PLUGINS
 
-    plugins = set()
-    local_interp = None
-    hexchat = None
-    hexchat_stdout = None
+    PLUGINS = set()
+    LOCAL_INTERP = None
+    HEXCHAT = None
+    HEXCHAT_STDOUT = None
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__
     pydoc.help = pydoc.Helper()

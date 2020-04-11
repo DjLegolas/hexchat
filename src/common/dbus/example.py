@@ -29,23 +29,23 @@ path = connection.Connect('(ssss)',
 					'Python example', 
 					'Example of a D-Bus client written in python', 
 					'1.0')		
-hexchat = Gio.DBusProxy.new_sync(bus, Gio.DBusProxyFlags.NONE, None,
+HEXCHAT = Gio.DBusProxy.new_sync(bus, Gio.DBusProxyFlags.NONE, None,
 								'org.hexchat.service', path, 'org.hexchat.plugin', None)
          
 # Note the type before every arguement, this must be done.
 # Type requirements are listed in our docs and characters are listed in the dbus docs.
 # s = string, u = uint, i = int, etc.
 
-channels = hexchat.ListGet ('(s)', "channels")
-while hexchat.ListNext ('(u)', channels):
-	name = hexchat.ListStr ('(us)', channels, "channel")
+channels = HEXCHAT.ListGet ('(s)', "channels")
+while HEXCHAT.ListNext ('(u)', channels):
+	name = HEXCHAT.ListStr ('(us)', channels, "channel")
 	print("------- " + name + " -------")
-	hexchat.SetContext ('(u)', hexchat.ListInt ('(us)', channels, "context"))
-	hexchat.EmitPrint ('(sas)', "Channel Message", ["John", "Hi there", "@"])
-	users = hexchat.ListGet ('(s)', "users")
-	while hexchat.ListNext ('(u)', users):
-		print("Nick: " + hexchat.ListStr ('(us)', users, "nick"))
-	hexchat.ListFree ('(u)', users)
-hexchat.ListFree ('(u)', channels)
+	HEXCHAT.SetContext ('(u)', HEXCHAT.ListInt ('(us)', channels, "context"))
+	HEXCHAT.EmitPrint ('(sas)', "Channel Message", ["John", "Hi there", "@"])
+	users = HEXCHAT.ListGet ('(s)', "users")
+	while HEXCHAT.ListNext ('(u)', users):
+		print("Nick: " + HEXCHAT.ListStr ('(us)', users, "nick"))
+	HEXCHAT.ListFree ('(u)', users)
+HEXCHAT.ListFree ('(u)', channels)
 
-print(hexchat.Strip ('(sii)', "\00312Blue\003 \002Bold!\002", -1, 1|2))
+print(HEXCHAT.Strip ('(sii)', "\00312Blue\003 \002Bold!\002", -1, 1 | 2))
