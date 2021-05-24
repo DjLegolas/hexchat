@@ -75,7 +75,7 @@
 #define DOMAINLEN	100
 #define NICKLEN		64				/* including the NULL, so 63 really */
 #define CHANLEN		300
-#define PDIWORDS		32
+#define PDIWORDS	32
 #define USERNAMELEN 10
 #define HIDDEN_CHAR	8			/* invisible character for xtext */
 
@@ -301,8 +301,8 @@ struct hexchatprefs
 	char hex_irc_user_name[127];
 	char hex_net_bind_host[127];
 	char hex_net_proxy_host[64];
-	char hex_net_proxy_pass[32];
-	char hex_net_proxy_user[32];
+	char hex_net_proxy_pass[256];
+	char hex_net_proxy_user[256];
 	char hex_stamp_log_format[64];
 	char hex_stamp_text_format[64];
 	char hex_text_background[PATHLEN + 1];

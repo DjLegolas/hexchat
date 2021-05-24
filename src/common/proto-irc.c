@@ -454,7 +454,8 @@ channel_date (session *sess, char *chan, char *timestr,
 {
 	time_t timestamp = (time_t) atol (timestr);
 	char *tim = ctime (&timestamp);
-	tim[24] = 0;	/* get rid of the \n */
+	if (tim != NULL)
+		tim[24] = 0;	/* get rid of the \n */
 	EMIT_SIGNAL_TIMESTAMP (XP_TE_CHANDATE, sess, chan, tim, NULL, NULL, 0,
 								  tags_data->timestamp);
 }
@@ -602,7 +603,8 @@ process_numeric (session * sess, int n,
 			else
 			{
 				tim = ctime (&timestamp);
-				tim[19] = 0; 	/* get rid of the \n */
+				if (tim != NULL)
+					tim[19] = 0; 	/* get rid of the \n */
 				EMIT_SIGNAL_TIMESTAMP (XP_TE_WHOIS4T, whois_sess, word[4],
 											  outbuf, tim, NULL, 0, tags_data->timestamp);
 			}
@@ -621,7 +623,7 @@ process_numeric (session * sess, int n,
 	case 319:
 		if (!serv->skip_next_whois)
 			EMIT_SIGNAL_TIMESTAMP (XP_TE_WHOIS2, whois_sess, word[4],
-										  word_eol[5] + 1, NULL, NULL, 0,
+										  word_eol[5][0] == ':' ? word_eol[5] + 1 : word_eol[5], NULL, NULL, 0,
 										  tags_data->timestamp);
 		break;
 
@@ -1155,16 +1157,22 @@ process_named_msg (session *sess, char *type, char *word[], char *word_eol[],
 							   NULL, 0xff, tags_data);
 			return;
 
+		case WORDL('S', 'E', 'T', 'N'):
+			inbound_user_info (sess, NULL, NULL, NULL, NULL, nick, STRIP_COLON(word, word_eol, 3),
+							   NULL, 0xff, tags_data);
+			return;
+
 		case WORDL('I','N','V','I'):
 			if (ignore_check (word[1], IG_INVI))
 				return;
-			
-			if (word[4][0] == ':')
-				EMIT_SIGNAL_TIMESTAMP (XP_TE_INVITED, sess, word[4] + 1, nick,
-											  serv->servername, NULL, 0,
+
+			text = STRIP_COLON(word, word_eol, 4);
+			if (serv->p_cmp (word[3], serv->nick))
+				EMIT_SIGNAL_TIMESTAMP (XP_TE_INVITEDOTHER, sess, text, nick,
+											  word[3], serv->servername, 0,
 											  tags_data->timestamp);
 			else
-				EMIT_SIGNAL_TIMESTAMP (XP_TE_INVITED, sess, word[4], nick,
+				EMIT_SIGNAL_TIMESTAMP (XP_TE_INVITED, sess, text, nick,
 											  serv->servername, NULL, 0,
 											  tags_data->timestamp);
 				

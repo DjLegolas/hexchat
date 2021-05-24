@@ -1,6 +1,6 @@
 /*
 
-  Copyright (c) 2010 Samuel Lidén Borell <samuel@kodafritt.se>
+  Copyright (c) 2020 <bakasura@protonmail.ch>
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,18 @@
 
 */
 
-#ifndef KEYSTORE_H
-#define KEYSTORE_H
+#ifndef PLUGIN_HEXCHAT_FISHLIM_UTILS_H
+#define PLUGIN_HEXCHAT_FISHLIM_UTILS_H
 
 #include <stddef.h>
-
-#include <glib.h>
 #include "fish.h"
 
-char *keystore_get_key(const char *nick, enum fish_mode *mode);
-gboolean keystore_store_key(const char *nick, const char *key, enum fish_mode mode);
-gboolean keystore_delete_nick(const char *nick);
+unsigned long base64_len(size_t plaintext_len);
+unsigned long base64_fish_len(size_t plaintext_len);
+unsigned long cbc_len(size_t plaintext_len);
+unsigned long ecb_len(size_t plaintext_len);
+unsigned long encoded_len(size_t plaintext_len, enum fish_mode mode);
+int max_text_command_len(size_t max_len, enum fish_mode mode);
+const char *foreach_utf8_data_chunks(const char *data, int max_chunk_len, int *chunk_len);
 
 #endif
-
